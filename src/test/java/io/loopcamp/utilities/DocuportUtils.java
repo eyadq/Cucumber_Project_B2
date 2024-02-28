@@ -23,8 +23,6 @@ public class DocuportUtils {
             case "client":
                 username.sendKeys(DocuportConstants.USERNAME_CLIENT);
                 password.sendKeys(DocuportConstants.PASSWORD);
-
-
                 break;
             case "supervisor":
                 username.sendKeys(DocuportConstants.USERNAME_SUPERVISOR);
@@ -67,4 +65,6 @@ public class DocuportUtils {
         WebElement logoutButton = Driver.getDriver().findElement(By.xpath("//span[text()='Log out']"));
         logoutButton.click();
     }
+
+
 }

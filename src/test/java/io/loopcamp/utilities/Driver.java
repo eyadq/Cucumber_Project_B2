@@ -3,7 +3,12 @@ package io.loopcamp.utilities;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.ChromiumDriver;
+import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.safari.SafariDriver;
 
 import java.time.Duration;
 
@@ -20,7 +25,10 @@ public class Driver {
     Making driver instance private
     static - run before anything else and also use in static method
      */
-    private static WebDriver driver;
+
+    //private static WebDriver driver;
+    //implement thread pool to achieve multi thread locally
+    private static InheritableThreadLocal<WebDriver> driverPool = new InheritableThreadLocal<>();
 
     /**
      * Reusable method that will return the same drive instance ev ery time called
@@ -28,22 +36,42 @@ public class Driver {
      * @author eyadq
      */
     public static WebDriver getDriver() {
-        if(driver==null){
+        if(driverPool.get()==null){
             String browserType = ConfigurationReader.getProperty("browser");
             switch (browserType.toLowerCase()){
                 case "chrome":
                     WebDriverManager.chromedriver().setup();
-                    driver = new ChromeDriver();
+                    driverPool.set( new ChromeDriver());
                     break;
-                    case "firefox":
+                case "firefox":
                     WebDriverManager.firefoxdriver().setup();
-                    driver = new FirefoxDriver();
+                    driverPool.set(new FirefoxDriver());
+                    break;
+                case "chrome-headless":
+                    ChromeOptions options = new ChromeOptions();
+                    options.addArguments("--headless"); // enable headless mode
+                    WebDriverManager.chromedriver().setup();
+                    driverPool.set(new ChromeDriver(options));
+                    break;
+                case "firefox-headless":
+                    FirefoxOptions foxOptions = new FirefoxOptions();
+                    foxOptions.addArguments("-headless"); // enable headless mode
+                    WebDriverManager.firefoxdriver().setup();
+                    driverPool.set(new FirefoxDriver(foxOptions));
+                    break;
+                case "edge":
+                    WebDriverManager.edgedriver().setup();
+                    driverPool.set(new EdgeDriver());
+                    break;
+                case "safari":
+                    WebDriverManager.safaridriver().setup();
+                    driverPool.set(new SafariDriver());
                     break;
             }
-            driver.manage().window().maximize();
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+            driverPool.get().manage().window().maximize();
+            driverPool.get().manage().timeouts().implicitlyWait(Duration.ofSeconds(Integer.valueOf(ConfigurationReader.getProperty("timeout"))));
         }
-        return driver;
+        return driverPool.get();
     }
 
     /**
@@ -51,9 +79,9 @@ public class Driver {
      * @author eyadq
      */
     public static void closeDriver(){
-        if(driver != null){
-            driver.quit();
-            driver = null;
+        if(driverPool.get() != null){
+            driverPool.get().quit();
+            driverPool.remove();
         }
     }
 }
